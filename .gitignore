@@ -1,3 +1,14 @@
+# General
+.DS_Store
+.classpath
+.project
+.settings
+.tmh
+.bak
+*.tmp
+*.swp
+*~
+
 # Logs
 logs
 *.log
@@ -7,16 +18,38 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Node / Vite / React
+node_modules/
+.pnp.*
+dist/
+dist-ssr/
+build/
 *.local
+.env
+.env.*
+!*.env.example
+
+# Yarn
+.yarn/*
+!.yarn/patches
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
+
+# Tauri / Rust
+src-tauri/target/
+src-tauri/gen/
+src-tauri/tauri.conf.json.bak
+src-tauri/build/
+# If you want to ensure reproducible builds, you can comment out the next line
+src-tauri/Cargo.lock
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
+!.vscode/settings.json
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
