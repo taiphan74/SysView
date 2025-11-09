@@ -14,20 +14,29 @@ interface GpuInfo {
   backend: string;
 }
 
+interface RamInfo {
+  total: number;
+  used: number;
+  available: number;
+}
+
 function App() {
   const [cpuInfo, setCpuInfo] = useState<CpuInfo | null>(null);
   const [gpuInfo, setGpuInfo] = useState<GpuInfo | null>(null);
+  const [ramInfo, setRamInfo] = useState<RamInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchHardwareInfo() {
       try {
-        const [cpu, gpu] = await Promise.all([
+        const [cpu, gpu, ram] = await Promise.all([
           core.invoke<CpuInfo>('get_cpu_info'),
           core.invoke<GpuInfo>('get_gpu_info'),
+          core.invoke<RamInfo>('get_ram_info'),
         ]);
         setCpuInfo(cpu);
         setGpuInfo(gpu);
+        setRamInfo(ram);
       } catch (err) {
         console.error('Failed to fetch hardware info:', err);
         setError('Failed to load hardware info');
@@ -44,6 +53,8 @@ function App() {
   return (
     <>
       <h2>Hardware Info</h2>
+
+      {/* CPU Info */}
       {cpuInfo ? (
         <div>
           <h3>CPU</h3>
@@ -55,6 +66,7 @@ function App() {
         <p>Loading CPU info...</p>
       )}
 
+      {/* GPU Info */}
       {gpuInfo ? (
         <div style={{ marginTop: '1rem' }}>
           <h3>GPU</h3>
@@ -65,6 +77,18 @@ function App() {
         </div>
       ) : (
         <p>Loading GPU info...</p>
+      )}
+
+      {/* RAM Info */}
+      {ramInfo ? (
+        <div style={{ marginTop: '1rem' }}>
+          <h3>RAM</h3>
+          <p><strong>Total:</strong> {(ramInfo.total / 1024 / 1024).toFixed(2)} GB</p>
+          <p><strong>Used:</strong> {(ramInfo.used / 1024 / 1024).toFixed(2)} GB</p>
+          <p><strong>Available:</strong> {(ramInfo.available / 1024 / 1024).toFixed(2)} GB</p>
+        </div>
+      ) : (
+        <p>Loading RAM info...</p>
       )}
     </>
   )

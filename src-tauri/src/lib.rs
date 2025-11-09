@@ -16,6 +16,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             sysinfo::cpu::get_cpu_info,
             sysinfo::gpu::get_gpu_info,
+            sysinfo::ram::get_ram_info,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
