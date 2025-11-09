@@ -22,17 +22,22 @@ type HardwareDevice = {
 const DEFAULT_DEVICES: HardwareDevice[] = [
   { id: "cpu", name: "CPU", desc: "Processor" },
   { id: "memory", name: "Memory", desc: "RAM" },
-  { id: "gpu-0", name: "GPU 0", desc: "Graphics" },
 ];
 
 interface HardwareSidebarProps {
   devices?: HardwareDevice[];
+  activeId?: string;
+  onSelectDevice?: (deviceId: string) => void;
 }
 
-export function HardwareSidebar({ devices }: HardwareSidebarProps) {
+export function HardwareSidebar({
+  devices,
+  activeId,
+  onSelectDevice,
+}: HardwareSidebarProps) {
   const list = React.useMemo(() => {
     const source = devices && devices.length > 0 ? devices : DEFAULT_DEVICES;
-    const priority = ["cpu", "memory", "ram", "gpu", "gpu-0", "gpu-1"];
+    const priority = ["cpu", "memory", "ram"];
     return [...source].sort((a, b) => {
       const ia = priority.findIndex((p) => a.id.toLowerCase().startsWith(p));
       const ib = priority.findIndex((p) => b.id.toLowerCase().startsWith(p));
@@ -59,7 +64,12 @@ export function HardwareSidebar({ devices }: HardwareSidebarProps) {
           <SidebarMenu>
             {list.map((item) => (
               <SidebarMenuItem key={item.id}>
-                <SidebarMenuButton className="justify-between">
+                <SidebarMenuButton
+                  type="button"
+                  className="justify-between"
+                  isActive={item.id === activeId}
+                  onClick={() => onSelectDevice?.(item.id)}
+                >
                   <span className="truncate">{item.name}</span>
                   {item.desc ? (
                     <span className="text-xs text-muted-foreground">

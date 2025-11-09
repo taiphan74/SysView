@@ -1,8 +1,11 @@
 mod sysinfo;
 
+use crate::sysinfo::shared::build_system_state;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(build_system_state())
         .setup(|app| {
             // chạy thread đo CPU + RAM nền
             crate::sysinfo::system_monitor::start_system_thread();
