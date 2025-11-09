@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { core } from "@tauri-apps/api";
 import { AppLayout } from "./AppLayout";
+import { CPUChart } from "@/components/CPUChart";
 
 interface CpuInfo {
   brand: string;
@@ -48,7 +49,7 @@ function App() {
     fetchHardwareInfo();
   }, []);
 
-  // danh sách device để đưa xuống sidebar
+  // sidebar devices
   const devices = [
     {
       id: "cpu",
@@ -67,9 +68,6 @@ function App() {
       name: gpuInfo ? gpuInfo.name : "GPU",
       desc: gpuInfo ? gpuInfo.backend : undefined,
     },
-    // bạn muốn thì thêm NVMe, Wireless...
-    { id: "nvme", name: "NVMe" },
-    { id: "wireless", name: "Wireless (wlp2s0)" },
   ];
 
   return (
@@ -78,66 +76,19 @@ function App() {
         <p>{error}</p>
       ) : (
         <div className="p-4 space-y-4">
-          <h2 className="text-lg font-semibold">Hardware Info</h2>
+          <h2 className="text-lg font-semibold">
+            {cpuInfo ? cpuInfo.brand : "CPU Usage"}
+          </h2>
 
-          {/* CPU */}
-          {cpuInfo ? (
-            <div className="space-y-1">
-              <h3 className="font-medium">CPU</h3>
-              <p>
-                <strong>Name:</strong> {cpuInfo.brand}
-              </p>
-              <p>
-                <strong>Cores:</strong> {cpuInfo.cores}
-              </p>
-              <p>
-                <strong>Frequency:</strong> {cpuInfo.frequency} MHz
-              </p>
-            </div>
-          ) : (
-            <p>Loading CPU info...</p>
-          )}
+          {/* === Biểu đồ CPU === */}
+          <CPUChart />
 
-          {/* GPU */}
-          {gpuInfo ? (
-            <div className="space-y-1">
-              <h3 className="font-medium">GPU</h3>
-              <p>
-                <strong>Name:</strong> {gpuInfo.name}
-              </p>
-              <p>
-                <strong>Vendor ID:</strong> {gpuInfo.vendor}
-              </p>
-              <p>
-                <strong>Device ID:</strong> {gpuInfo.device}
-              </p>
-              <p>
-                <strong>Backend:</strong> {gpuInfo.backend}
-              </p>
+          {/* (Optionally) thông tin tóm tắt */}
+          {cpuInfo && (
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>Cores: {cpuInfo.cores}</span>
+              <span>Frequency: {cpuInfo.frequency} MHz</span>
             </div>
-          ) : (
-            <p>Loading GPU info...</p>
-          )}
-
-          {/* RAM */}
-          {ramInfo ? (
-            <div className="space-y-1">
-              <h3 className="font-medium">RAM</h3>
-              <p>
-                <strong>Total:</strong>{" "}
-                {(ramInfo.total / 1024 / 1024).toFixed(2)} GB
-              </p>
-              <p>
-                <strong>Used:</strong>{" "}
-                {(ramInfo.used / 1024 / 1024).toFixed(2)} GB
-              </p>
-              <p>
-                <strong>Available:</strong>{" "}
-                {(ramInfo.available / 1024 / 1024).toFixed(2)} GB
-              </p>
-            </div>
-          ) : (
-            <p>Loading RAM info...</p>
           )}
         </div>
       )}
