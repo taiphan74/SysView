@@ -1,39 +1,20 @@
 "use client"
 
-import type { ReactNode } from "react"
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
+import { core } from "@tauri-apps/api"
 import type { TooltipProps } from "recharts"
 import {
   AreaChart,
   Area,
-  XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts"
 
-type CpuDatum = {
-  time: string
-  usage: number
+interface CPUChartProps {
+  className?: string
 }
-
-const generateCpuData = (points = 90): CpuDatum[] => {
-  let usage = 30 + Math.random() * 20
-
-  return Array.from({ length: points }, (_, idx) => {
-    usage = Math.max(5, Math.min(97, usage + (Math.random() - 0.5) * 15))
-    const seconds = idx * 2
-    const minutes = Math.floor(seconds / 60)
-    const remainder = seconds % 60
-
-    return {
-      time: `${minutes}:${remainder.toString().padStart(2, "0")}s`,
-      usage: Number(usage.toFixed(1)),
-    }
-  })
-}
-
-const data = generateCpuData()
 
 function ChartContainer({
   className = "",
@@ -44,7 +25,7 @@ function ChartContainer({
 }) {
   return (
     <div
-      className={`w-full rounded-2xl border border-slate-800 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-4 text-slate-100 shadow-inner ${className}`}
+      className={`w-full rounded-xl border border-border bg-background p-4 text-foreground shadow-sm ${className}`}
     >
       {children}
     </div>
@@ -60,37 +41,63 @@ function ChartTooltip({
   const item = payload[0]
 
   return (
-    <div className="rounded-lg border border-slate-700 bg-slate-900/90 px-3 py-2 text-xs">
-      <p className="font-semibold text-slate-200">{item.payload.time}</p>
-      <p className="text-slate-400">Usage: {item.value}%</p>
+    <div className="rounded-lg border border-border bg-background px-3 py-2 text-xs">
+      <p className="text-muted-foreground">Usage</p>
+      <p className="font-semibold">{item.value?.toFixed(1)}%</p>
     </div>
   )
 }
 
-export function CPUChart() {
+export function CPUChart({ className = "h-[260px]" }: CPUChartProps) {
+  const [history, setHistory] = useState<number[]>([])
+  const mountedRef = useRef(true)
+
+  useEffect(() => {
+    mountedRef.current = true
+
+    const fetchHistory = async () => {
+      try {
+        const response = await core.invoke<number[]>("get_cpu_usage_history")
+        if (mountedRef.current) {
+          setHistory(response)
+        }
+      } catch (error) {
+        console.error("Failed to fetch CPU usage history", error)
+      }
+    }
+
+    fetchHistory()
+    const id = setInterval(fetchHistory, 1000)
+
+    return () => {
+      mountedRef.current = false
+      clearInterval(id)
+    }
+  }, [])
+
+  const chartData = useMemo(
+    () =>
+      (history.length ? history : [0]).map((usage, idx) => ({
+        idx,
+        usage: Number(usage.toFixed(1)),
+      })),
+    [history],
+  )
+
   return (
-    <ChartContainer className="h-[260px]">
+    <ChartContainer className={className}>
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
+        <AreaChart data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="cpu-gradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#2F7DED" stopOpacity={0.65} />
-              <stop offset="90%" stopColor="#1B3A73" stopOpacity={0.1} />
+              <stop offset="5%" stopColor="#2563eb" stopOpacity={0.8} />
+              <stop offset="95%" stopColor="#2563eb" stopOpacity={0.15} />
             </linearGradient>
           </defs>
           <CartesianGrid
             stroke="rgba(148, 163, 184, 0.12)"
             vertical={false}
             strokeDasharray="4 8"
-          />
-          <XAxis
-            dataKey="time"
-            tickLine={false}
-            axisLine={false}
-            tickMargin={8}
-            minTickGap={32}
-            stroke="#64748b"
-            fontSize={12}
           />
           <YAxis
             tick={{ fontSize: 12, fill: "#64748b" }}
@@ -107,8 +114,9 @@ export function CPUChart() {
             stroke="#3B82F6"
             strokeWidth={2}
             fill="url(#cpu-gradient)"
-            animationDuration={1200}
+            animationDuration={500}
             dot={false}
+            isAnimationActive={false}
           />
         </AreaChart>
       </ResponsiveContainer>

@@ -1,25 +1,36 @@
 use serde::Serialize;
-use sysinfo::{System, RefreshKind, MemoryRefreshKind};
-use tauri::command;
+use tauri::State;
+
+use crate::sysinfo::shared::SharedSystem;
 
 /// Thông tin RAM hiện tại trên hệ thống
 #[derive(Serialize)]
 pub struct RamInfo {
-    pub total: u64,      // Tổng RAM (bytes)
-    pub used: u64,       // RAM đang sử dụng (bytes)
-    pub available: u64,  // RAM khả dụng (bytes)
+    pub total: u64,
+    pub used: u64,
+    pub available: u64,
+    pub percent: f32,
 }
 
-#[command]
-pub fn get_ram_info() -> RamInfo {
-    let mut sys = System::new_with_specifics(
-        RefreshKind::new().with_memory(MemoryRefreshKind::everything())
-    );
+#[tauri::command]
+pub fn get_ram_info(system: State<SharedSystem>) -> RamInfo {
+    let mut sys = system.lock().unwrap();
     sys.refresh_memory();
 
+    let total = sys.total_memory();
+    let used = sys.used_memory();
+    let avail = sys.available_memory();
+
+    let percent = if total > 0 {
+        (used as f32 / total as f32) * 100.0
+    } else {
+        0.0
+    };
+
     RamInfo {
-        total: sys.total_memory(),
-        used: sys.used_memory(),
-        available: sys.available_memory(),
+        total,
+        used,
+        available: avail,
+        percent,
     }
 }

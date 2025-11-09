@@ -27,7 +27,7 @@ function App() {
   const [cpuInfo, setCpuInfo] = useState<CpuInfo | null>(null);
   const [gpuInfo, setGpuInfo] = useState<GpuInfo | null>(null);
   const [ramInfo, setRamInfo] = useState<RamInfo | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const error: string | null = null;
 
   useEffect(() => {
     async function fetchHardwareInfo() {
@@ -42,7 +42,6 @@ function App() {
         setRamInfo(ram);
       } catch (err) {
         console.error("Failed to fetch hardware info:", err);
-        setError("Failed to load hardware info");
       }
     }
 
@@ -72,26 +71,18 @@ function App() {
 
   return (
     <AppLayout devices={devices}>
-      {error ? (
-        <p>{error}</p>
-      ) : (
-        <div className="p-4 space-y-4">
-          <h2 className="text-lg font-semibold">
-            {cpuInfo ? cpuInfo.brand : "CPU Usage"}
-          </h2>
-
-          {/* === Biểu đồ CPU === */}
-          <CPUChart />
-
-          {/* (Optionally) thông tin tóm tắt */}
-          {cpuInfo && (
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Cores: {cpuInfo.cores}</span>
-              <span>Frequency: {cpuInfo.frequency} MHz</span>
-            </div>
-          )}
-        </div>
-      )}
+      <div className="flex h-full min-h-screen w-full flex-col p-4">
+        {error ? (
+          <p>{error}</p>
+        ) : (
+          <>
+            <h2 className="text-lg font-semibold">
+              {cpuInfo ? cpuInfo.brand : "CPU Usage"}
+            </h2>
+            <CPUChart className="mt-4 flex-1" />
+          </>
+        )}
+      </div>
     </AppLayout>
   );
 }
