@@ -24,3 +24,5 @@ log = "0.4"
 tauri = { version = "2.9.2", features = [] }
 tauri-plugin-log = "2.7.1"
 sysinfo = "0.31"
+wgpu = "0.20"
+pollster = "0.3"
