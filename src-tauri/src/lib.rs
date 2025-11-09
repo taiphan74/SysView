@@ -3,10 +3,11 @@ mod sysinfo;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .manage(sysinfo::shared::build_system_state())
-        .setup(|app| {
+        .setup(|_app| {
+            crate::sysinfo::cpu_monitor::start_cpu_thread();
+
             if cfg!(debug_assertions) {
-                app.handle().plugin(
+                _app.handle().plugin(
                     tauri_plugin_log::Builder::default()
                         .level(log::LevelFilter::Info)
                         .build(),
@@ -18,6 +19,8 @@ pub fn run() {
             sysinfo::cpu::get_cpu_info,
             sysinfo::gpu::get_gpu_info,
             sysinfo::ram::get_ram_info,
+            sysinfo::cpu_monitor::get_cpu_history,
+            sysinfo::cpu_monitor::get_cpu_latest,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

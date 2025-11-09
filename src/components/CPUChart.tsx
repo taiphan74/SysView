@@ -1,7 +1,13 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
-import { core } from "@tauri-apps/api"
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react"
+import { invoke } from "@tauri-apps/api/core"
 import type { TooltipProps } from "recharts"
 import {
   AreaChart,
@@ -55,19 +61,38 @@ export function CPUChart({ className = "h-[260px]" }: CPUChartProps) {
   useEffect(() => {
     mountedRef.current = true
 
-    const fetchHistory = async () => {
+    // 1) lấy nguyên history khi mount
+    const fetchInitialHistory = async () => {
       try {
-        const response = await core.invoke<number[]>("get_cpu_usage_history")
-        if (mountedRef.current) {
+        // tên command trong Rust: get_cpu_history
+        const response = await invoke<number[]>("get_cpu_history")
+        if (mountedRef.current && Array.isArray(response)) {
           setHistory(response)
         }
       } catch (error) {
-        console.error("Failed to fetch CPU usage history", error)
+        console.error("Failed to fetch CPU history", error)
       }
     }
 
-    fetchHistory()
-    const id = setInterval(fetchHistory, 1000)
+    fetchInitialHistory()
+
+    // 2) sau đó mỗi 1s chỉ lấy điểm mới nhất
+    const id = setInterval(async () => {
+      try {
+        // tên command trong Rust: get_cpu_latest
+        const latest = await invoke<number | null>("get_cpu_latest")
+        if (!mountedRef.current) return
+        if (typeof latest === "number") {
+          setHistory(prev => {
+            const next = [...prev, latest]
+            // khớp với backend: giữ tối đa 200 mẫu
+            return next.slice(-200)
+          })
+        }
+      } catch (error) {
+        console.error("Failed to fetch latest CPU usage", error)
+      }
+    }, 1000)
 
     return () => {
       mountedRef.current = false
@@ -87,7 +112,10 @@ export function CPUChart({ className = "h-[260px]" }: CPUChartProps) {
   return (
     <ChartContainer className={className}>
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
+        <AreaChart
+          data={chartData}
+          margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
+        >
           <defs>
             <linearGradient id="cpu-gradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#2563eb" stopOpacity={0.8} />
@@ -107,7 +135,7 @@ export function CPUChart({ className = "h-[260px]" }: CPUChartProps) {
             domain={[0, 100]}
             ticks={[0, 25, 50, 75, 100]}
           />
-          <Tooltip content={<ChartTooltip />} cursor={{ stroke: "#1d4ed8" }} />
+        <Tooltip content={<ChartTooltip />} cursor={false} />
           <Area
             type="monotone"
             dataKey="usage"
