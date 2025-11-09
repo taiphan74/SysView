@@ -794,6 +794,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tauri-apps/api@npm:^2.9.0":
+  version: 2.9.0
+  resolution: "@tauri-apps/api@npm:2.9.0"
+  checksum: 10c0/714a43ec1c4eeeebbf7a070800731cb1f473ef9ef59849abe64a8f0495a39d38f836009901d24c6992689244760129f8ef581526c198b422074da85f38ad13c2
+  languageName: node
+  linkType: hard
+
 "@tauri-apps/cli-darwin-arm64@npm:2.9.3":
   version: 2.9.3
   resolution: "@tauri-apps/cli-darwin-arm64@npm:2.9.3"
@@ -1818,6 +1825,7 @@ __metadata:
   resolution: "frontend@workspace:."
   dependencies:
     "@eslint/js": "npm:^9.36.0"
+    "@tauri-apps/api": "npm:^2.9.0"
     "@tauri-apps/cli": "npm:^2.9.3"
     "@types/node": "npm:^24.6.0"
     "@types/react": "npm:^19.1.16"
