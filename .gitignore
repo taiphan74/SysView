@@ -56,3 +56,4 @@ src-tauri/Cargo.lock
 *.sln
 *.sw?
 GEMINI.md
+repomix-output.xml
