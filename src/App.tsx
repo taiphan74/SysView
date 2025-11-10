@@ -1,7 +1,11 @@
 import { useEffect } from "react"
 import { AppLayout } from "./AppLayout"
-import { CPUChart } from "@/components/cpu-chart"
-import { RAMChart } from "@/components/ram-chart"
+import { CPUChart } from "@/components/charts/cpu-chart"
+import { RAMChart } from "@/components/charts/ram-chart"
+import { SysInfoLayout } from "@/components/sysinfo/sysinfo-layout"
+import { CpuInfoPanel } from "@/components/sysinfo/cpu-info-panel"
+import { RamInfoPanel } from "@/components/sysinfo/ram-info-panel"
+import { formatRamUsage } from "@/algorithms/memory-format"
 import { useHardwareStore } from "@/stores/hardware-store"
 import { useSidebarStore } from "@/stores/sidebar-store"
 
@@ -33,13 +37,6 @@ export default function App() {
 
   // khi có hardware → push vào sidebar store
   useEffect(() => {
-    const formatGiB = (value?: number | null) =>
-      typeof value === "number"
-        ? `${(value / 1024 / 1024).toFixed(1)}`
-        : undefined
-    const ramUsedGiB = formatGiB(ramDynamic?.used)
-    const ramTotalGiB = formatGiB(ramStatic?.total)
-
     const nextDevices = [
       {
         id: "cpu",
@@ -50,10 +47,7 @@ export default function App() {
       {
         id: "memory",
         name: "Memory",
-        desc:
-          ramUsedGiB && ramTotalGiB
-            ? `${ramUsedGiB} / ${ramTotalGiB} GiB`
-            : undefined,
+        desc: formatRamUsage(ramDynamic?.used, ramStatic?.total) ?? undefined,
         value:
           ramDynamic && typeof ramDynamic.percent === "number"
             ? `${ramDynamic.percent.toFixed(0)}% used`
@@ -70,7 +64,7 @@ export default function App() {
       onSelectDevice={setActiveId}
       machineName={machineName}
     >
-      <div className="flex h-full min-h-screen w-full flex-col p-4">
+      <div className="flex h-full w-full flex-col p-4">
         {isLoading ? (
           <p>Loading hardware info...</p>
         ) : (
@@ -80,14 +74,22 @@ export default function App() {
                 <h2 className="text-lg font-semibold">
                   {cpuBrand ?? "CPU"}
                 </h2>
-                <CPUChart className="mt-4 flex-1" />
+                <SysInfoLayout
+                  className="mt-4 flex-1"
+                  chart={<CPUChart />}
+                  infoPanel={<CpuInfoPanel data={cpuInfo?.staticInfo} />}
+                />
               </>
             )}
 
             {activeId === "memory" && (
               <>
                 <h2 className="text-lg font-semibold">Memory</h2>
-                <RAMChart className="mt-4 flex-1" />
+                <SysInfoLayout
+                  className="mt-4 flex-1"
+                  chart={<RAMChart />}
+                  infoPanel={<RamInfoPanel data={ramStatic} />}
+                />
               </>
             )}
           </>

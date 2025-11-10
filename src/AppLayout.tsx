@@ -31,9 +31,9 @@ export function AppLayout({
             />
 
             {/* Nội dung chính */}
-            <main className="flex flex-1 flex-col">
+            <main className="flex h-svh flex-1 flex-col overflow-hidden">
                 <AppHeader machineName={machineName} />
-                <div className="flex-1">{children}</div>
+                <div className="flex-1 overflow-hidden">{children}</div>
             </main>
         </SidebarProvider>
     );

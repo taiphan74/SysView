@@ -1,54 +1,6 @@
 import { create } from "zustand"
 import { invoke } from "@tauri-apps/api/core"
-
-interface CpuCacheInfo {
-  l1: string | null
-  l2: string | null
-  l3: string | null
-}
-
-interface CpuStaticInfo {
-  brand: string | null
-  physicalCores: number | null
-  sockets: number | null
-  virtualProcessors: number | null
-  virtualization: string | null
-  baseFrequencyMhz: number | null
-  governor: string | null
-  caches: CpuCacheInfo
-}
-
-interface CpuDynamicInfo {
-  currentFrequencyMhz: number | null
-}
-
-interface CpuInfo {
-  staticInfo: CpuStaticInfo
-  dynamicInfo: CpuDynamicInfo
-}
-
-interface RamStaticInfo {
-  total: number
-  swapTotal: number
-  speedMtps: number | null
-  slotsUsed: number | null
-  slotsAvailable: number | null
-  formFactor: string | null
-  memType: string | null
-}
-
-interface RamDynamicInfo {
-  used: number
-  available: number
-  percent: number
-  swapUsed: number
-  swapAvailable: number
-}
-
-interface RamInfo {
-  staticInfo: RamStaticInfo
-  dynamicInfo: RamDynamicInfo
-}
+import type { CpuInfo, RamInfo } from "@/types/sysinfo"
 
 interface HardwareState {
   cpuInfo: CpuInfo | null

@@ -1,21 +1,21 @@
 "use client"
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react"
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import {
-  AreaChart,
   Area,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
+  AreaChart,
   CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  YAxis,
 } from "recharts"
+import {
+  createEmptyHistory,
+  hasHistorySamples,
+  normalizeHistory,
+  pushHistoryValue,
+} from "./history-buffer"
 
 interface RAMChartProps {
   className?: string
@@ -30,7 +30,7 @@ function ChartContainer({
 }) {
   return (
     <div
-      className={`w-full rounded-xl border border-border bg-background p-4 text-foreground shadow-sm ${className}`}
+      className={`h-full w-full rounded-xl border border-border bg-background p-4 text-foreground shadow-sm ${className}`}
     >
       {children}
     </div>
@@ -39,25 +39,29 @@ function ChartContainer({
 
 type ChartTooltipProps = {
   active?: boolean
-  payload?: Array<{ value?: number }>
+  payload?: Array<{ value?: number | null }>
 }
 
 function ChartTooltip({ active, payload }: ChartTooltipProps) {
   if (!active || !payload?.length) return null
 
   const item = payload[0]
+  if (typeof item.value !== "number") return null
 
   return (
     <div className="rounded-lg border border-border bg-background px-3 py-2 text-xs">
       <p className="text-muted-foreground">RAM usage</p>
-      <p className="font-semibold">{item.value?.toFixed(1)}%</p>
+      <p className="font-semibold">{item.value.toFixed(1)}%</p>
     </div>
   )
 }
 
-export function RAMChart({ className = "h-[260px]" }: RAMChartProps) {
-  const [history, setHistory] = useState<number[]>([])
+export function RAMChart({ className = "h-full" }: RAMChartProps) {
+  const [history, setHistory] = useState<(number | null)[]>(() =>
+    createEmptyHistory(),
+  )
   const mountedRef = useRef(true)
+  const gradientId = useId()
 
   useEffect(() => {
     mountedRef.current = true
@@ -66,8 +70,8 @@ export function RAMChart({ className = "h-[260px]" }: RAMChartProps) {
     const fetchInitialHistory = async () => {
       try {
         const response = await invoke<number[]>("get_ram_history")
-        if (mountedRef.current && Array.isArray(response)) {
-          setHistory(response)
+        if (mountedRef.current) {
+          setHistory(normalizeHistory(response))
         }
       } catch (error) {
         console.error("Failed to fetch RAM history", error)
@@ -80,13 +84,8 @@ export function RAMChart({ className = "h-[260px]" }: RAMChartProps) {
     const id = setInterval(async () => {
       try {
         const latest = await invoke<number | null>("get_ram_latest")
-        if (!mountedRef.current) return
-        if (typeof latest === "number") {
-          setHistory(prev => {
-            const next = [...prev, latest]
-            return next.slice(-200) // giữ tối đa 200 mẫu
-          })
-        }
+        if (!mountedRef.current || typeof latest !== "number") return
+        setHistory(prev => pushHistoryValue(prev, latest))
       } catch (error) {
         console.error("Failed to fetch latest RAM usage", error)
       }
@@ -99,13 +98,10 @@ export function RAMChart({ className = "h-[260px]" }: RAMChartProps) {
   }, [])
 
   const chartData = useMemo(
-    () =>
-      (history.length ? history : [0]).map((usage, idx) => ({
-        idx,
-        usage: Number(usage.toFixed(1)),
-      })),
+    () => history.map((usage, idx) => ({ idx, usage })),
     [history],
   )
+  const hasSamples = hasHistorySamples(history)
 
   return (
     <ChartContainer className={className}>
@@ -115,9 +111,9 @@ export function RAMChart({ className = "h-[260px]" }: RAMChartProps) {
           margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
         >
           <defs>
-            <linearGradient id="ram-gradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#22c55e" stopOpacity={0.8} />
-              <stop offset="95%" stopColor="#22c55e" stopOpacity={0.15} />
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#22c55e" stopOpacity={0.4} />
+              <stop offset="95%" stopColor="#22c55e" stopOpacity={0.05} />
             </linearGradient>
           </defs>
           <CartesianGrid
@@ -134,16 +130,20 @@ export function RAMChart({ className = "h-[260px]" }: RAMChartProps) {
             ticks={[0, 25, 50, 75, 100]}
           />
           <Tooltip content={<ChartTooltip />} cursor={false} />
-          <Area
-            type="monotone"
-            dataKey="usage"
-            stroke="#22c55e"
-            strokeWidth={2}
-            fill="url(#ram-gradient)"
-            animationDuration={500}
-            dot={false}
-            isAnimationActive={false}
-          />
+          {hasSamples && (
+            <Area
+              type="monotone"
+              dataKey="usage"
+              stroke="#22c55e"
+              strokeWidth={2}
+              fill={`url(#${gradientId})`}
+              fillOpacity={1}
+              animationDuration={500}
+              dot={false}
+              isAnimationActive={false}
+              connectNulls={false}
+            />
+          )}
         </AreaChart>
       </ResponsiveContainer>
     </ChartContainer>
