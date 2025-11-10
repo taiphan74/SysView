@@ -8,7 +8,6 @@ import {
   type ReactNode,
 } from "react"
 import { invoke } from "@tauri-apps/api/core"
-import type { TooltipProps } from "recharts"
 import {
   AreaChart,
   Area,
@@ -38,10 +37,12 @@ function ChartContainer({
   )
 }
 
-function ChartTooltip({
-  active,
-  payload,
-}: TooltipProps<number, string | number>) {
+type ChartTooltipProps = {
+  active?: boolean
+  payload?: Array<{ value?: number }>
+}
+
+function ChartTooltip({ active, payload }: ChartTooltipProps) {
   if (!active || !payload?.length) return null
 
   const item = payload[0]

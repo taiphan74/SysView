@@ -4,6 +4,7 @@ export interface SidebarDevice {
   id: string
   name: string
   desc?: string
+  value?: string
 }
 
 interface SidebarState {

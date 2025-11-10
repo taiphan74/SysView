@@ -6,8 +6,9 @@ use std::{
 };
 
 use once_cell::sync::Lazy;
-use sysinfo::{System, RefreshKind, CpuRefreshKind, MemoryRefreshKind};
 use tauri::command;
+
+use crate::sysinfo::shared::SharedSystem;
 
 const MAX_SAMPLES: usize = 200;
 
@@ -18,44 +19,50 @@ static RAM_HISTORY: Lazy<Arc<Mutex<VecDeque<f32>>>> =
     Lazy::new(|| Arc::new(Mutex::new(VecDeque::new())));
 
 /// Chạy nền: đọc CPU + RAM mỗi 500ms
-pub fn start_system_thread() {
+pub fn start_system_thread(system: SharedSystem) {
     let cpu_history = CPU_HISTORY.clone();
     let ram_history = RAM_HISTORY.clone();
 
-    thread::spawn(move || {
-        let mut sys = System::new_with_specifics(
-            RefreshKind::new()
-                .with_cpu(CpuRefreshKind::everything())
-                .with_memory(MemoryRefreshKind::everything()),
-        );
-
-        loop {
-            // đo CPU và RAM
+    thread::spawn(move || loop {
+        {
+            let mut sys = system.lock().unwrap();
             sys.refresh_cpu_all();
             sys.refresh_memory();
-            thread::sleep(Duration::from_millis(500));
+        }
+
+        thread::sleep(Duration::from_millis(500));
+
+        let (cpu_usage, total, used) = {
+            let mut sys = system.lock().unwrap();
             sys.refresh_cpu_all();
             sys.refresh_memory();
 
-            let cpu_usage = sys.global_cpu_usage();
-            let total = sys.total_memory() as f32;
-            let used = sys.used_memory() as f32;
-            let ram_usage = if total > 0.0 { (used / total) * 100.0 } else { 0.0 };
+            (
+                sys.global_cpu_usage(),
+                sys.total_memory() as f32,
+                sys.used_memory() as f32,
+            )
+        };
 
-            {
-                let mut c = cpu_history.lock().unwrap();
-                c.push_back(cpu_usage);
-                if c.len() > MAX_SAMPLES {
-                    c.pop_front();
-                }
+        let ram_usage = if total > 0.0 {
+            (used / total) * 100.0
+        } else {
+            0.0
+        };
+
+        {
+            let mut c = cpu_history.lock().unwrap();
+            c.push_back(cpu_usage);
+            if c.len() > MAX_SAMPLES {
+                c.pop_front();
             }
+        }
 
-            {
-                let mut r = ram_history.lock().unwrap();
-                r.push_back(ram_usage);
-                if r.len() > MAX_SAMPLES {
-                    r.pop_front();
-                }
+        {
+            let mut r = ram_history.lock().unwrap();
+            r.push_back(ram_usage);
+            if r.len() > MAX_SAMPLES {
+                r.pop_front();
             }
         }
     });

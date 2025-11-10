@@ -7,16 +7,15 @@ import {
   SidebarHeader,
   SidebarGroup,
   SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
+import { HardwareSidebarList } from "./hardware-sidebar-list";
 
 type HardwareDevice = {
   id: string;
   name: string;
   desc?: string;
+  value?: string;
 };
 
 const DEFAULT_DEVICES: HardwareDevice[] = [
@@ -61,25 +60,11 @@ export function HardwareSidebar({
       <SidebarContent className="pt-2">
         <SidebarGroup>
           <SidebarGroupLabel>Hardware</SidebarGroupLabel>
-          <SidebarMenu>
-            {list.map((item) => (
-              <SidebarMenuItem key={item.id}>
-                <SidebarMenuButton
-                  type="button"
-                  className="justify-between"
-                  isActive={item.id === activeId}
-                  onClick={() => onSelectDevice?.(item.id)}
-                >
-                  <span className="truncate">{item.name}</span>
-                  {item.desc ? (
-                    <span className="text-xs text-muted-foreground">
-                      {item.desc}
-                    </span>
-                  ) : null}
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
+          <HardwareSidebarList
+            list={list}
+            activeId={activeId}
+            onSelect={onSelectDevice}
+          />
         </SidebarGroup>
 
         <SidebarSeparator className="my-2" />
